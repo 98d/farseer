@@ -8,9 +8,9 @@ import lombok.Data;
 @Data
 public class Document {
     @TableId(type = IdType.ASSIGN_ID)
-    private String id;
-    private String text;
-    private String content; // 必须是 json
+    protected String id;
+    protected String text;
+    protected String content; // 必须是 json
 
     public static Document fromJSON(String keyword, String content) {
         Document document = new Document();
