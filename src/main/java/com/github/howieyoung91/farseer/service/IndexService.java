@@ -8,29 +8,48 @@ import com.github.howieyoung91.farseer.entity.Index;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * @author Howie Young
+ */
 public interface IndexService {
+    /**
+     * 查询 document 的倒排索引
+     */
     List<Index> getIndices(String documentId, Page<Index> page);
 
     /**
-     * 把 documents 添加进入索引库
+     * 把 documents 添加进入倒排索引库
      */
     Collection<Index> index(List<Document> documents);
 
     /**
-     * 根据单个词进行查询
+     * 根据单个词进行查询 (不分词)
      */
-    List<DocumentDto> searchSingleWord(String word, Page<Index> page);
+    List<DocumentDto> searchByWord(String word, Page<Index> page);
 
     /**
-     * 根据查询字符串进行查询
+     * 根据一个句子进行查询 (智能分词)
      * <p>
-     * collection arraylist -> 表示查询 collection 和 arraylist 然后取并集
+     * example:
      * <p>
-     * collection -arraylist -> 表示查询 collection 和 arraylist，并对其做差集 collection-arraylist
+     * [0] JavaC++Golang -> Java/C++/Golang
+     * <p>
+     * [1] Java是一门面向对象的编程语言 -> Java/是/一门/面向对象/的/编程语言
+     */
+    Collection<DocumentDto> searchBySentence(String sentence, Page<Index> page);
+
+    /**
+     * 根据查询字符串进行查询 (空格分词模式)
+     * <p>
+     * examples:
+     * <p>
+     * [0] Java C++ -> 表示查询 Java 和 C++ 然后取交集
+     * <p>
+     * [1] Java -Golang -> 表示查询 Java 和 Golang，并做差集 Java-Golang
      * <p>
      *
      * @param query 查询字符串
      * @param page  分页
      */
-    List<DocumentDto> searchQueryWords(String query, Page<Index> page);
+    List<DocumentDto> searchByQueryString(String query, Page<Index> page);
 }

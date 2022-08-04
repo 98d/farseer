@@ -40,16 +40,13 @@ public class Keyword implements Comparable<Keyword> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
+    public boolean equals(Object o) {
+        if (this == o)
             return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
+        if (o == null || getClass() != o.getClass())
             return false;
-        }
-
-        Keyword other = (Keyword) obj;
-        return Objects.equals(name, other.name);
+        Keyword keyword = (Keyword) o;
+        return Double.compare(keyword.tfidfvalue, tfidfvalue) == 0 && Objects.equals(name, keyword.name);
     }
 }
 

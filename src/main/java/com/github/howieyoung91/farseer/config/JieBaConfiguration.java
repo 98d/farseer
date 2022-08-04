@@ -5,6 +5,8 @@ import com.huaban.analysis.jieba.JiebaSegmenter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.IOException;
+
 @Configuration
 public class JieBaConfiguration {
     @Bean
@@ -14,6 +16,11 @@ public class JieBaConfiguration {
 
     @Bean
     TFIDFAnalyzer tfidfAnalyzer() {
-        return new TFIDFAnalyzer();
+        try {
+            return new TFIDFAnalyzer("/jieba/stop_words.txt", "/jieba/idf_dict.txt");
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

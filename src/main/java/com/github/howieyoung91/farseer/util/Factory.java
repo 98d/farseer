@@ -6,9 +6,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.Objects;
 
 public class Factory {
-    public static        Object NULL          = new Object();
-    private static final long   PAGE_MAX_SIZE = 1000;
-
+    public static        Object NULL              = new Object();
+    private static final long   PAGE_MAX_SIZE     = 1000;
+    private static final long   PAGE_DEFAULT_SIZE = 20;
 
     public static <T> LambdaQueryWrapper<T> createLambdaQueryWrapper(Class<T> clazz) {
         return new LambdaQueryWrapper<T>();
@@ -48,6 +48,6 @@ public class Factory {
     }
 
     public static <T> Page<T> createPage(long current, long size) {
-        return createPage(current, size, PAGE_MAX_SIZE);
+        return createPage(current, size, PAGE_DEFAULT_SIZE);
     }
 }

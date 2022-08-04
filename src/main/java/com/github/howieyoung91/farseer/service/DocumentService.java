@@ -29,7 +29,10 @@ public class DocumentService {
      * @param indices 一组倒排索引
      * @return 文档
      */
-    public List<Document> selectIndexedDocuments(List<Index> indices) {
+    public List<Document> selectDocumentsByIndices(List<Index> indices) {
+        if (indices.isEmpty()) {
+            return new ArrayList<>(0);
+        }
         List<Document> documents = new ArrayList<>();
         for (Index index : indices) {
             String   documentId = index.getDocumentId();

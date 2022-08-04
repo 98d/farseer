@@ -1,6 +1,11 @@
 package com.github.howieyoung91.farseer.service;
 
 import com.github.howieyoung91.farseer.entity.Document;
+import com.github.howieyoung91.farseer.entity.Index;
+import com.github.howieyoung91.farseer.entity.Token;
+import com.github.howieyoung91.farseer.mapper.DocumentMapper;
+import com.github.howieyoung91.farseer.mapper.IndexMapper;
+import com.github.howieyoung91.farseer.mapper.TokenMapper;
 import com.github.howieyoung91.farseer.service.support.DefaultIndexService;
 import com.github.howieyoung91.farseer.util.Factory;
 import org.junit.jupiter.api.Test;
@@ -13,14 +18,25 @@ import java.util.ArrayList;
 public class IndexServiceTest {
     @Autowired
     private DefaultIndexService indexService;
+    @Autowired
+    private DocumentMapper      documentMapper;
+    @Autowired
+    private IndexMapper         indexMapper;
+    @Autowired
+    private TokenMapper         tokenMapper;
 
     @Test
     void testSearchQueryWords() {
-        System.out.println(indexService.searchQueryWords("台湾 -美国", Factory.createPage(1, 20)));
+        System.out.println(indexService.searchByQueryString("JavaScript", Factory.createPage(1, 20)));
     }
 
     @Test
     void testIndex() {
+
+        documentMapper.delete(Factory.createLambdaQueryWrapper(Document.class).or());
+        indexMapper.delete(Factory.createLambdaQueryWrapper(Index.class).or());
+        tokenMapper.delete(Factory.createLambdaQueryWrapper(Token.class).or());
+
         ArrayList<Document> documents = new ArrayList<>();
 
         Document document = new Document();
@@ -44,17 +60,52 @@ public class IndexServiceTest {
         document3.setText("JavaScript（简称“JS”） 是一种具有函数优先的轻量级，解释型或即时编译型的编程语言。虽然它是作为开发Web页面的脚本语言而出名，但是它也被用到了很多非浏览器环境中，JavaScript 基于原型编程、多范式的动态脚本语言，并且支持面向对象、命令式、声明式、函数式编程范式。");
         document3.setContent("{}");
         documents.add(document3);
-        
+
         Document document4 = new Document();
         document4.setText("Go（又称 Golang）是 Google 的 Robert Griesemer，Rob Pike 及 Ken Thompson 开发的一种静态强类型、编译型语言。Go 语言语法与 C 相近，但功能上有：内存安全，GC（垃圾回收），结构形态及 CSP-style 并发计算。");
         document4.setContent("{}");
         documents.add(document4);
+
+        Document document5 = new Document();
+        document5.setText("java golang");
+        document5.setContent("{}");
+        documents.add(document5);
+
+        Document document6 = new Document();
+        document6.setText("java c++");
+        document6.setContent("{}");
+        documents.add(document6);
+
+        Document document7 = new Document();
+        document7.setText("js c++ java c");
+        document7.setContent("{}");
+        documents.add(document7);
+
+        Document document8 = new Document();
+        document8.setText("golang c++ js");
+        document8.setContent("{}");
+        documents.add(document8);
+
+        Document document9 = new Document();
+        document9.setText("c js");
+        document9.setContent("{}");
+        documents.add(document9);
+
+        Document document10 = new Document();
+        document10.setText("c golang js");
+        document10.setContent("{}");
+        documents.add(document10);
 
         System.out.println(indexService.index(documents));
     }
 
     @Test
     void testSearch() {
-        System.out.println(indexService.searchSingleWord("Collection", Factory.createPage(1, 1000)));
+        System.out.println(indexService.searchByWord("Collection", Factory.createPage(1, 1000)));
+    }
+
+    @Test
+    void testSearchBySentence() {
+        System.out.println(indexService.searchBySentence("java C++ javascript", Factory.createPage(1, 20)));
     }
 }

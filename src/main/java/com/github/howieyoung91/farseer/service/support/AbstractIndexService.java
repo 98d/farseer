@@ -7,10 +7,7 @@ import com.github.howieyoung91.farseer.util.keyword.TFIDFAnalyzer;
 import com.huaban.analysis.jieba.JiebaSegmenter;
 
 import javax.annotation.Resource;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class AbstractIndexService implements IndexService {
@@ -19,11 +16,21 @@ public abstract class AbstractIndexService implements IndexService {
     @Resource
     private TFIDFAnalyzer  analyzer;
 
+    protected List<String> segmentOnSearchMode(String text) {
+        return segment(text, JiebaSegmenter.SegMode.SEARCH);
+    }
+
     /**
      * 对一段文本进行分词
      */
-    protected Collection<String> segment(String text) {
-        return new HashSet<>(segmenter.sentenceProcess(text));
+    protected List<String> segmentOnIndexMode(String text) {
+        return segment(text, JiebaSegmenter.SegMode.INDEX);
+    }
+
+    private List<String> segment(String text, JiebaSegmenter.SegMode mode) {
+        return segmenter.process(text, mode).stream()
+                .map(segToken -> segToken.word)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -31,7 +38,7 @@ public abstract class AbstractIndexService implements IndexService {
      */
     protected Map<String, Keyword> analyze(String text, int number) {
         List<Keyword> keywords = analyzer.analyze(text, number);
-        return keywords.stream().collect(Collectors.toMap(Keyword::getName, keyword -> keyword));
+        return keywords.stream().collect(Collectors.toMap(keyword -> keyword.getName().toLowerCase(Locale.ENGLISH), keyword -> keyword, (a, b) -> b));
     }
 
     /**

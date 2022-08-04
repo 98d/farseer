@@ -14,7 +14,7 @@ public class DocumentDto {
     private String  content;
     private Details details = new Details();
 
-    public static DocumentDto wrap(Document other) {
+    public static DocumentDto from(Document other) {
         DocumentDto dto = new DocumentDto();
         dto.setId(other.getId());
         dto.setText(other.getText());
