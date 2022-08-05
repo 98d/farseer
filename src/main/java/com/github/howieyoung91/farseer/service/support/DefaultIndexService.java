@@ -10,6 +10,7 @@ import com.github.howieyoung91.farseer.pojo.IndexInfo;
 import com.github.howieyoung91.farseer.service.DocumentService;
 import com.github.howieyoung91.farseer.service.TokenService;
 import com.github.howieyoung91.farseer.util.Factory;
+import com.github.howieyoung91.farseer.util.Highlighter;
 import com.github.howieyoung91.farseer.util.StringUtil;
 import com.github.howieyoung91.farseer.util.keyword.Keyword;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,10 +42,17 @@ public class DefaultIndexService extends AbstractIndexService {
     @Override
     public List<Index> getIndices(String documentId, Page<Index> page) {
         return indexMapper.selectPage(
-                Factory.resolvePage(page),
-                Factory.createLambdaQueryWrapper(Index.class)
-                        .eq(Index::getDocumentId, documentId)
-        ).getRecords();
+                        Factory.resolvePage(page),
+                        Factory.createLambdaQueryWrapper(Index.class)
+                                .eq(Index::getDocumentId, documentId))
+                .getRecords();
+    }
+
+    @Override
+    @Transactional
+    public int deleteIndices(String documentId) {
+        documentService.deleteById(documentId);
+        return indexMapper.delete(Factory.createLambdaQueryWrapper(Index.class).eq(Index::getDocumentId, documentId));
     }
 
     @Override
@@ -55,6 +70,9 @@ public class DefaultIndexService extends AbstractIndexService {
         Token          token     = tokenService.selectToken(word);
         List<Index>    indices   = selectIndicesByToken(token, page);
         List<Document> documents = documentService.selectDocumentsByIndices(indices);
+
+        highlight(word, documents);
+
         return convert2DocumentDto(word, documents, indices);
     }
 
@@ -71,6 +89,7 @@ public class DefaultIndexService extends AbstractIndexService {
         return hitDocumentDtoMap.values();
     }
 
+    @Override
     public List<DocumentDto> searchByQueryString(String query, Page<Index> page) {
         String[] words = StringUtil.splitByBlank(query);
 
@@ -79,79 +98,20 @@ public class DefaultIndexService extends AbstractIndexService {
 
         // search documents
         for (String word : words) {
-            String         resolvedWord = determineWord(word);
+            String         resolvedWord = resolveWord(word);
             List<Document> documents;
             if (isFilteredWord(word)) {
                 documents = selectDocumentIndexedByWord(resolvedWord, page, null);
-                documents.stream().map(Document::getId).forEach(filteredDocumentIds::add);
+                documents.stream().map(Document::getId).forEach(filteredDocumentIds::add); // add into filteredDocumentIds waiting for using
             }
             else {
                 selectDocumentIndexedByWord(resolvedWord, page, hitDocumentDtoMap);
             }
         }
 
-        return hitDocumentDtoMap.values().stream()
-                .filter(documentDto -> !filteredDocumentIds.contains(documentDto.getId()))
-                .collect(Collectors.toList());
+        return filterDocuments(hitDocumentDtoMap, filteredDocumentIds);
     }
 
-    /**
-     * 根据一个 word 查询对应的 document
-     *
-     * @param word              一个单词
-     * @param page              分页
-     * @param hitDocumentDtoMap documentId : documentDto 如果这个哈希表被传入，将会把查出来的 document 转为 documentDto 并添加进哈希表
-     * @return 查询出来的 document
-     */
-    private List<Document> selectDocumentIndexedByWord(String word, Page<Index> page, Map<String, DocumentDto> hitDocumentDtoMap) {
-        // Token -> Index -> Document
-        Token token = tokenService.selectToken(word);
-
-        List<Document> documents;
-        List<Index>    indices;
-        if (token == null) {
-            indices = new ArrayList<>(0);
-            documents = new ArrayList<>(0);
-        }
-        else {
-            indices = selectIndicesByToken(token, page);
-            documents = documentService.selectDocumentsByIndices(indices);
-        }
-
-
-        if (hitDocumentDtoMap == null) {
-            return documents;
-        }
-
-        // 把 document 转为 documentId 并取交集
-        if (hitDocumentDtoMap.isEmpty()) {
-            for (Document document : documents) {
-                DocumentDto documentDto = DocumentDto.from(document);
-                // 添加索引相关信息
-                populateIndexInfo(indices, document.getId(), documentDto, word);
-                hitDocumentDtoMap.put(document.getId(), documentDto);
-            }
-        }
-        else {
-            Map<String, Document> documentMap = documents.stream().collect(Collectors.toMap(Document::getId, document -> document));
-            hitDocumentDtoMap.keySet().removeIf(documentId -> !documentMap.containsKey(documentId));
-            // 添加索引相关信息
-            for (DocumentDto documentDto : hitDocumentDtoMap.values()) {
-                populateIndexInfo(indices, documentDto.getId(), documentDto, word);
-            }
-
-        }
-
-        return documents;
-    }
-
-    private static void populateIndexInfo(List<Index> indices, String documentDto, DocumentDto documentDto1, String word) {
-        for (Index index : indices) {
-            if (Objects.equals(index.getDocumentId(), documentDto)) {
-                documentDto1.addIndexInfo(word, IndexInfo.from(index));
-            }
-        }
-    }
 
     // ========================================   public methods   =========================================
 
@@ -219,11 +179,22 @@ public class DefaultIndexService extends AbstractIndexService {
             return new ArrayList<>(0);
         }
         return indexMapper.selectPage(
-                        Factory.createPage(page.getCurrent(), page.getSize()),
+                        Factory.resolvePage(page),
                         Factory.createLambdaQueryWrapper(Index.class)
                                 .eq(Index::getTokenId, token.getId())
                                 .orderByDesc(Index::getScore))
                 .getRecords();
+    }
+
+    private static List<DocumentDto> convert2DocumentDto(String word, List<Document> documents, List<Index> indices) {
+        Map<String, Index> indexMap     = indices.stream().collect(Collectors.toMap(Index::getDocumentId, index -> index));
+        List<DocumentDto>  documentDtos = new ArrayList<>();
+        for (Document document : documents) {
+            DocumentDto documentDto = DocumentDto.from(document);
+            populateIndexInfo(word, documentDto, indexMap);
+            documentDtos.add(documentDto);
+        }
+        return documentDtos;
     }
 
     /**
@@ -231,7 +202,7 @@ public class DefaultIndexService extends AbstractIndexService {
      * -csdn -> csdn
      * java -> java
      */
-    private static String determineWord(String word) {
+    private static String resolveWord(String word) {
         // "-csdn" indicates "csdn" is a filtered word
         return (isFilteredWord(word) ? word.substring(1) : word).toLowerCase(Locale.ENGLISH);
     }
@@ -240,17 +211,85 @@ public class DefaultIndexService extends AbstractIndexService {
         return word.startsWith("-");
     }
 
-    private static List<DocumentDto> convert2DocumentDto(String word, List<Document> documents, List<Index> indices) {
-        Map<String, Index> indexMap     = indices.stream().collect(Collectors.toMap(Index::getDocumentId, index -> index));
-        List<DocumentDto>  documentDtos = new ArrayList<>();
-        for (Document document : documents) {
-            Index       index       = indexMap.get(document.getId());
-            DocumentDto documentDto = DocumentDto.from(document);
-            if (index != null) {
-                documentDto.addIndexInfo(word, IndexInfo.from(index));
-            }
-            documentDtos.add(documentDto);
+    /**
+     * 根据一个 word 查询对应的 document
+     *
+     * @param word              一个单词
+     * @param page              分页
+     * @param hitDocumentDtoMap documentId : documentDto 如果这个哈希表被传入，将会把查出来的 document 转为 documentDto 并添加进哈希表
+     * @return 查询出来的 document
+     */
+    private List<Document> selectDocumentIndexedByWord(String word, Page<Index> page, Map<String, DocumentDto> hitDocumentDtoMap) {
+        // Token -> Index -> Document
+        Token          token     = tokenService.selectToken(word);
+        List<Index>    indices   = selectIndicesByToken(token, page);
+        List<Document> documents = documentService.selectDocumentsByIndices(indices);
+        if (hitDocumentDtoMap != null) {
+            resolveHitDocumentDtoMap(word, hitDocumentDtoMap, indices, documents);
         }
-        return documentDtos;
+        return documents;
+    }
+
+    private static void resolveHitDocumentDtoMap(String word, Map<String, DocumentDto> hitDocumentDtoMap,
+                                                 List<Index> indices, List<Document> documents) {
+        Map<String, Index> indexMap = indices.stream().collect(Collectors.toMap(Index::getDocumentId, index -> index));
+
+        // 把 document 转为 documentId 并取交集
+        if (hitDocumentDtoMap.isEmpty()) {
+            // 第一次不用取交集，因为还是第一次还是空集
+            for (Document document : documents) {
+                DocumentDto documentDto = DocumentDto.from(document);
+                populateIndexInfo(word, documentDto, indexMap);
+                hitDocumentDtoMap.put(document.getId(), documentDto);
+            }
+        }
+        else {
+            intersect(hitDocumentDtoMap, documents);
+
+            for (DocumentDto documentDto : hitDocumentDtoMap.values()) {
+                populateIndexInfo(word, documentDto, indexMap);
+            }
+        }
+    }
+
+    private static void intersect(Map<String, DocumentDto> hitDocumentDtoMap, List<Document> documents) {
+        // documentId : document
+        Map<String, Document> collect = documents.stream().collect(Collectors.toMap(Document::getId, document -> document));
+        doIntersect(hitDocumentDtoMap, collect);
+    }
+
+    /**
+     * 取交集
+     */
+    private static void doIntersect(Map<String, DocumentDto> hitDocumentDtoMap, Map<String, Document> documentMap) {
+        hitDocumentDtoMap.keySet().removeIf(documentId -> !documentMap.containsKey(documentId));
+    }
+
+    private static List<DocumentDto> filterDocuments(Map<String, DocumentDto> hitDocumentDtoMap, Set<String> filteredDocumentIds) {
+        return hitDocumentDtoMap.values().stream()
+                .filter(documentDto -> !filteredDocumentIds.contains(documentDto.getId()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 向 documentDto 中添加命中的索引信息 IndexInfo
+     *
+     * @param word        该索引的 tokenId 对应的 word
+     * @param documentDto a documentDto
+     * @param indexMap    一个哈希表 documentId : index，记录查询出 document 所使用的 index
+     */
+    private static void populateIndexInfo(String word, DocumentDto documentDto, Map<String, Index> indexMap) {
+        Index index = indexMap.get(documentDto.getId());
+        if (index != null) {
+            documentDto.addIndexInfo(word, IndexInfo.from(index));
+        }
+    }
+
+    private static void highlight(String word, List<Document> documents) {
+        for (Document document : documents) {
+            Highlighter highlighter     = new Highlighter(document.getText(), document.getHighlightPrefix(), document.getHighlightSuffix());
+            String      highlightedText = highlighter.highlight(word);
+            document.setText(highlightedText);
+        }
     }
 }

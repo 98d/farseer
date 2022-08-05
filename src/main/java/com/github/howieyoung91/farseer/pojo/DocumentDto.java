@@ -12,6 +12,8 @@ public class DocumentDto {
     private String  id;
     private String  text;
     private String  content;
+    private String  highlightPrefix;
+    private String  highlightSuffix;
     private Details details = new Details();
 
     public static DocumentDto from(Document other) {
@@ -19,6 +21,8 @@ public class DocumentDto {
         dto.setId(other.getId());
         dto.setText(other.getText());
         dto.setContent(other.getContent());
+        dto.setHighlightPrefix(other.getHighlightPrefix());
+        dto.setHighlightSuffix(other.getHighlightSuffix());
         return dto;
     }
 

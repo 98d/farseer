@@ -18,6 +18,11 @@ public interface IndexService {
     List<Index> getIndices(String documentId, Page<Index> page);
 
     /**
+     * 删除倒排索引
+     */
+    int deleteIndices(String documentId);
+
+    /**
      * 把 documents 添加进入倒排索引库
      */
     Collection<Index> index(List<Document> documents);

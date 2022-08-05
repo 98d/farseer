@@ -5,6 +5,7 @@ import com.github.howieyoung91.farseer.entity.Document;
 import com.github.howieyoung91.farseer.entity.Index;
 import com.github.howieyoung91.farseer.pojo.DocumentDto;
 import com.github.howieyoung91.farseer.pojo.JsonResponse;
+import com.github.howieyoung91.farseer.service.DocumentService;
 import com.github.howieyoung91.farseer.service.IndexService;
 import com.github.howieyoung91.farseer.util.Factory;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +14,15 @@ import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/farseer")
 public class IndexController {
     @Resource
-    private IndexService indexService;
+    private IndexService    indexService;
+    @Resource
+    private DocumentService documentService;
 
     @GetMapping("/document/search/query/{query}")
     public JsonResponse searchByQueryString(@PathVariable String query, Integer page, Integer size) {
@@ -69,6 +73,12 @@ public class IndexController {
         }
         List<Index> indices = indexService.getIndices(documentId, Factory.createPage(page, size));
         return JsonResponse.SUCCESSFUL(indices);
+    }
+
+    @DeleteMapping("/document/{documentId}/index")
+    public JsonResponse deleteIndices(@PathVariable String documentId) {
+        int i = indexService.deleteIndices(documentId);
+        return JsonResponse.SUCCESSFUL(Map.of("count", i));
     }
 
     @PutMapping("/index")

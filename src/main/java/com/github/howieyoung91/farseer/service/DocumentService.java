@@ -23,6 +23,10 @@ public class DocumentService {
         return documentMapper.insertBatch(documents);
     }
 
+    public void deleteById(String documentId) {
+        documentMapper.deleteById(documentId);
+    }
+
     /**
      * 根据一组倒排索引查询对应对文档
      *
