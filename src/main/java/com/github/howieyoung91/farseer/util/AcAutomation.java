@@ -2,6 +2,10 @@ package com.github.howieyoung91.farseer.util;
 
 import java.util.*;
 
+/**
+ * AC自动机
+ * 用于实现字符串的多模匹配
+ */
 public class AcAutomation {
     private static class Node {
         Character            character;
@@ -9,12 +13,11 @@ public class AcAutomation {
         Node                 fail;
         Map<Character, Node> fails    = new HashMap<>();
         private boolean isWord = false;
-
+        private int     level  = 0;
 
         public Node(Character character) {
             this.character = character;
         }
-
 
         public void addChild(Character c, Node node) {
             children.put(c, node);
@@ -73,8 +76,8 @@ public class AcAutomation {
         }
     }
 
-    private final    Node              root = new Node(null);
-    private volatile ArrayList<String> words;
+    private final Node        root  = new Node(null);
+    private final Set<String> words = new HashSet<>();
 
     public AcAutomation() {
         root.fail = root;
@@ -83,18 +86,20 @@ public class AcAutomation {
     public static AcAutomation from(String... words) {
         AcAutomation ac = new AcAutomation();
         for (String word : words) {
-            ac.addWord(word);
+            if (ac.words.add(word)) {
+                ac.addWord(word);
+            }
         }
         ac.buildFail();
         return ac;
     }
 
-    public int search(String word) {
-        int  count  = 0;
-        Node curr   = root;
-        int  length = word.length();
+    public List<Interval> search(String text) {
+        ArrayList<Interval> intervals = new ArrayList<>();
+        Node                curr      = root;
+        int                 length    = text.length();
         for (int i = 0; i < length; ) {
-            char c = word.charAt(i);
+            char c = Character.toLowerCase(text.charAt(i)); // 不区分大小写
 
             // determine child
             Node child;
@@ -106,6 +111,10 @@ public class AcAutomation {
                 curr = curr.fail;
                 if (curr == root) {
                     child = root;
+                    if (!root.hasChild(c)) {
+                        // 根结点不存在 则跳过
+                        i++;
+                    }
                     break;
                 }
             }
@@ -114,23 +123,17 @@ public class AcAutomation {
             // 匹配成功
             if (curr != root) {
                 if (curr.isWord) {
-                    count++;
+                    int start = i - curr.level + 1;
+                    int end   = i + 1;
+                    intervals.add(new Interval(start, end, text.substring(start, end)));
                 }
                 i++;
             }
         }
-        return count;
+        return intervals;
     }
 
-    public List<String> words() {
-        if (words == null) {
-            synchronized (this) {
-                if (words == null) {
-                    words = new ArrayList<>();
-                    words(root, new StringBuilder(), words);
-                }
-            }
-        }
+    public Set<String> words() {
         return words;
     }
 
@@ -141,6 +144,7 @@ public class AcAutomation {
             char c = word.charAt(i);
             curr = curr.children.computeIfAbsent(c, character -> new Node(c));
         }
+        curr.level = word.length();
         curr.isWord = true;
     }
 
@@ -173,19 +177,6 @@ public class AcAutomation {
                     fail = root;
                 }
                 child.fail = fail;
-
-                // 路径压缩
-                // fail.children.forEach((c, n) -> {
-                //     if (!child.hasChild(c)) {
-                //         child.addFail(c, n);
-                //     }
-                // });
-                // fail.fails.forEach((c, n) -> {
-                //     if (!child.hasChild(c)) {
-                //         child.addFail(c, n);
-                //     }
-                // });
-
                 queue.add(child);
             });
         }

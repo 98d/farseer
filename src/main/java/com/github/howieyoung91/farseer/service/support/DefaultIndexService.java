@@ -71,9 +71,11 @@ public class DefaultIndexService extends AbstractIndexService {
         List<Index>    indices   = selectIndicesByToken(token, page);
         List<Document> documents = documentService.selectDocumentsByIndices(indices);
 
-        highlight(word, documents);
 
-        return convert2DocumentDto(word, documents, indices);
+        List<DocumentDto> documentDtos = convert2DocumentDto(word, documents, indices);
+        highlight(documentDtos, word);
+
+        return documentDtos;
     }
 
 
@@ -86,7 +88,11 @@ public class DefaultIndexService extends AbstractIndexService {
             selectDocumentIndexedByWord(word, page, hitDocumentDtoMap);
         }
 
-        return hitDocumentDtoMap.values();
+        Collection<DocumentDto> documentDtos = hitDocumentDtoMap.values();
+
+        highlight(documentDtos, words.toArray(new String[]{}));
+
+        return documentDtos;
     }
 
     @Override
@@ -109,7 +115,10 @@ public class DefaultIndexService extends AbstractIndexService {
             }
         }
 
-        return filterDocuments(hitDocumentDtoMap, filteredDocumentIds);
+        List<DocumentDto> documentDtos = filterDocuments(hitDocumentDtoMap, filteredDocumentIds);
+        highlight(documentDtos, words);
+
+        return documentDtos;
     }
 
 
@@ -285,11 +294,11 @@ public class DefaultIndexService extends AbstractIndexService {
         }
     }
 
-    private static void highlight(String word, List<Document> documents) {
-        for (Document document : documents) {
-            Highlighter highlighter     = new Highlighter(document.getText(), document.getHighlightPrefix(), document.getHighlightSuffix());
-            String      highlightedText = highlighter.highlight(word);
-            document.setText(highlightedText);
+    private static void highlight(Collection<DocumentDto> documents, String... words) {
+        for (DocumentDto documentDto : documents) {
+            Highlighter highlighter     = new Highlighter(documentDto.getHighlightPrefix(), documentDto.getHighlightSuffix(), words);
+            String      highlightedText = highlighter.highlight(documentDto.getText());
+            documentDto.setText(highlightedText);
         }
     }
 }

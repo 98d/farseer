@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Locale;
 
 
 @Slf4j
@@ -22,13 +21,15 @@ public class test {
 
     @Test
     public void segTest1() {
-        for (String sentence : sentences) {
-            List<SegToken> tokens = segmenter.process(sentence, JiebaSegmenter.SegMode.SEARCH);
-            System.out.printf(Locale.getDefault(), "\n%s\n%s", sentence, tokens.toString());
-            System.out.println(tokens);
-            List<Keyword> keywords = analyzer.analyze(sentence, 10);
-            System.out.println(keywords);
-        }
+        List<SegToken> process = segmenter.process("没有这些加加减减", JiebaSegmenter.SegMode.SEARCH);
+        System.out.println(process);
+        // for (String sentence : sentences) {
+        //     List<SegToken> tokens = segmenter.process(sentence, JiebaSegmenter.SegMode.SEARCH);
+        //     System.out.printf(Locale.getDefault(), "\n%s\n%s", sentence, tokens.toString());
+        //     System.out.println(tokens);
+        //     List<Keyword> keywords = analyzer.analyze(sentence, 10);
+        //     System.out.println(keywords);
+        // }
     }
 
     @Test

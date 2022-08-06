@@ -1,74 +1,100 @@
 package com.github.howieyoung91.farseer.util;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.List;
 
 public class Highlighter {
-    private final String text;
-    private       String prefix;
-    private       String suffix;
+    private       String       prefix;
+    private       String       suffix;
+    private final AcAutomation ac;
 
-    public Highlighter(String text, String prefix, String suffix) {
-        this.text = text;
-        this.prefix = prefix;
-        this.suffix = suffix;
+    public Highlighter(String prefix, String suffix, String... words) {
+        AcAutomation.Builder builder = AcAutomation.Builder.aAcAutomation();
+        for (String word : words) {
+            builder.addWords(word.toLowerCase());
+        }
+        ac = builder.build();
+
+        this.prefix = (prefix == null ? "" : prefix);
+        this.suffix = (suffix == null ? "" : suffix);
     }
 
-    public String highlight(String keyword) {
-        if (prefix == null && suffix == null) {
+    public String highlight(String text) {
+        if (!shouldHighlight()) {
             return text;
         }
-        if (prefix == null) {
-            prefix = "";
+
+        List<Interval> intervals = ac.search(text);
+        if (intervals.isEmpty()) {
+            return text;
         }
-        if (suffix == null) {
-            suffix = "";
-        }
-        return highlight(text, keyword, prefix, suffix);
+
+        mergeIntervals(intervals); // 保证没有重叠区间
+
+        return doHighlight(text, intervals);
     }
 
-    // todo 多模匹配
-    public static String highlight(String text, String keyword, String prefix, String suffix) {
-        Map<Integer, String> map        = new HashMap<>();
-        int                  startIndex = 0;     // 关键字起始索引
-        int                  endIndex   = 0;     // 关键字结尾索引
-        boolean              isMatching = false; // 进入关键字匹配标志
-        // 遍历原始字符串
+    private boolean shouldHighlight() {
+        return !prefix.equals("") || !suffix.equals("");
+    }
+
+    private String doHighlight(String text, List<Interval> intervals) {
+        Iterator<Interval> iterator = intervals.iterator();
+        StringBuilder      builder  = new StringBuilder();
+        Interval           interval = iterator.next();
+
         for (int i = 0; i < text.length(); i++) {
-            // 遍历关键词字符串
-            for (char keyChar : keyword.toCharArray()) {
-                if (Character.toLowerCase(text.charAt(i)) == Character.toLowerCase(keyChar)) {
-                    // 匹配到关键字第一个字符相等后
-                    if (!isMatching) {
-                        startIndex = i;      // 将起始索引赋值为当前遍历原始字符串索引
-                        endIndex = i;        // 将结尾索引也赋值为相同到当前索引
-                        isMatching = true;   // 标记进入匹配模式
+            if (interval != null) {
+                if (i == interval.start()) {
+                    builder.append(prefix);
+                }
+                else if (i == interval.end()) {
+                    builder.append(suffix);
+                    if (iterator.hasNext()) {
+                        interval = iterator.next();
                     }
-                    endIndex++;              // 将结尾索引自增
-                    i = endIndex;            // 将遍历原始字符串到索引定位到结尾索引，避免重复遍历
-                }
-                else {
-                    isMatching = false;      // 如果不相等则结束匹配模式
+                    else {
+                        interval = null;
+                    }
                 }
             }
 
-            // 如果结束索引与起始索引相减到值为关键字到长度则表明匹配到完整到关键字
-            if (endIndex - startIndex == keyword.length()) {
-                // 将起始索引和结束索引对应到高亮标签put到哈希表中，并且重置匹配标识
-                map.put(startIndex, prefix);
-                map.put(endIndex, suffix);
-                isMatching = false;
-            }
+            builder.append(text.charAt(i));
         }
-
-        StringBuilder builder = new StringBuilder();
-        // 遍历原始字符串，通过哈希表中存储到高亮索引，将标签拼接到原始字符串里面
-        for (int i = 0; i < text.length(); i++) {
-            builder.append(map.getOrDefault(i, "")).append(text.charAt(i));
+        if (interval != null) {
+            builder.append(suffix);
         }
-        // 下面这一行是用来处理特殊情况，即关键字在最后到情况
-        builder.append(map.getOrDefault(text.length(), ""));
         return builder.toString();
     }
 
+    /**
+     * 合并重叠区间
+     */
+    private static void mergeIntervals(List<Interval> intervals) {
+        /*
+         * +-----+
+         * +-----+
+         *    +-------+
+         *    +-------+
+         *     ⬇
+         * +----------+
+         * +----------+
+         */
+        if (intervals.size() > 1) {
+            Iterator<Interval> it   = intervals.iterator();
+            Interval           curr = it.next();
+            Interval           next;
+            do {
+                next = it.next();
+                if (curr.end() >= next.start()) {
+                    it.remove();
+                    curr.setWord(curr.word().concat(next.word()));
+                    curr.setEnd(curr.end() + next.word().length());
+                }
+                else {
+                    curr = next;
+                }
+            } while (it.hasNext());
+        }
+    }
 }

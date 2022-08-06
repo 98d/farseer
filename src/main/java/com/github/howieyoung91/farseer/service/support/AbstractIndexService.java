@@ -5,9 +5,12 @@ import com.github.howieyoung91.farseer.service.IndexService;
 import com.github.howieyoung91.farseer.util.keyword.Keyword;
 import com.github.howieyoung91.farseer.util.keyword.TFIDFAnalyzer;
 import com.huaban.analysis.jieba.JiebaSegmenter;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class AbstractIndexService implements IndexService {
@@ -17,7 +20,9 @@ public abstract class AbstractIndexService implements IndexService {
     private TFIDFAnalyzer  analyzer;
 
     protected List<String> segmentOnSearchMode(String text) {
-        return segment(text, JiebaSegmenter.SegMode.SEARCH);
+        List<String> segment = segment(text, JiebaSegmenter.SegMode.SEARCH);
+        segment = segment.stream().filter(s -> !StringUtils.isBlank(s)).collect(Collectors.toList());
+        return segment;
     }
 
     /**
