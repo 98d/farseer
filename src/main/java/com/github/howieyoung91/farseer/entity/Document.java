@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class Document {
+public class Document implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
     private String text;
@@ -21,7 +23,7 @@ public class Document {
         return document;
     }
 
-    public Document highlight(String prefix, String suffix) {
+    public Document setHighlight(String prefix, String suffix) {
         highlightPrefix = prefix;
         highlightSuffix = suffix;
         return this;

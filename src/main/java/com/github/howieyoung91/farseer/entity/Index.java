@@ -7,11 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @TableName("`index`")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Index {
+public class Index implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private String  id;
     private String  tokenId;

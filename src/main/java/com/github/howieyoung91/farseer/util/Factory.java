@@ -18,7 +18,7 @@ public class Factory {
         return new LambdaQueryWrapper<>(query);
     }
 
-    public static <T> Page<T> resolvePage(Page<T> page) {
+    public static <T> Page<T> resolvePage(Page<T> page, long maxSize) {
         Objects.requireNonNull(page, "page cannot be null!");
         long current = page.getCurrent();
         long size    = page.getSize();
@@ -28,26 +28,23 @@ public class Factory {
         if (size < 0) {
             page.setSize(0);
         }
-        else if (size > PAGE_MAX_SIZE) {
-            page.setSize(PAGE_MAX_SIZE);
+        else if (size > maxSize) {
+            page.setSize(maxSize);
         }
         return page;
     }
 
+    public static <T> Page<T> resolvePage(Page<T> page) {
+        return resolvePage(page, PAGE_MAX_SIZE);
+    }
+
     public static <T> Page<T> createPage(long current, long size, long maxSize) {
-        if (current < 0) {
-            current = 0;
-        }
-        if (size < 0) {
-            size = 0;
-        }
-        else if (size > maxSize) {
-            size = maxSize;
-        }
-        return new Page<>(current, size);
+        Page<T> page = new Page<>(current, size);
+        return resolvePage(page, maxSize);
     }
 
     public static <T> Page<T> createPage(long current, long size) {
-        return createPage(current, size, PAGE_DEFAULT_SIZE);
+        Page<T> page = new Page<>(current, size);
+        return resolvePage(page);
     }
 }

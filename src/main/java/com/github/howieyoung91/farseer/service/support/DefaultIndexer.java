@@ -18,19 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class DefaultIndexService extends AbstractIndexService {
+public class DefaultIndexer extends SegmentCapableIndexer {
     @Resource
     private IndexMapper     indexMapper;
     @Resource
@@ -39,13 +32,15 @@ public class DefaultIndexService extends AbstractIndexService {
     private TokenService    tokenService;
 
     // ========================================   public methods   =========================================
+
     @Override
     public List<Index> getIndices(String documentId, Page<Index> page) {
         return indexMapper.selectPage(
-                        Factory.resolvePage(page),
-                        Factory.createLambdaQueryWrapper(Index.class)
-                                .eq(Index::getDocumentId, documentId))
-                .getRecords();
+                Factory.resolvePage(page),
+                Factory.createLambdaQueryWrapper(Index.class)
+                        .eq(Index::getDocumentId, documentId)
+                        .orderByDesc(Index::getScore)
+        ).getRecords();
     }
 
     @Override
@@ -67,10 +62,9 @@ public class DefaultIndexService extends AbstractIndexService {
     @Override
     public List<DocumentDto> searchByWord(String word, Page<Index> page) {
         // Token -> Indices -> Documents
-        Token          token     = tokenService.selectToken(word);
+        Token          token     = tokenService.selectTokenByWord(word);
         List<Index>    indices   = selectIndicesByToken(token, page);
         List<Document> documents = documentService.selectDocumentsByIndices(indices);
-
 
         List<DocumentDto> documentDtos = convert2DocumentDto(word, documents, indices);
         highlight(documentDtos, word);
@@ -89,7 +83,6 @@ public class DefaultIndexService extends AbstractIndexService {
         }
 
         Collection<DocumentDto> documentDtos = hitDocumentDtoMap.values();
-
         highlight(documentDtos, words.toArray(new String[]{}));
 
         return documentDtos;
@@ -157,7 +150,7 @@ public class DefaultIndexService extends AbstractIndexService {
     }
 
     private Token selectToken(String segment) {
-        Token token = tokenService.selectToken(segment);
+        Token token = tokenService.selectTokenByWord(segment);
         if (token == null) {
             token = tokenService.insert(segment);
         }
@@ -188,11 +181,11 @@ public class DefaultIndexService extends AbstractIndexService {
             return new ArrayList<>(0);
         }
         return indexMapper.selectPage(
-                        Factory.resolvePage(page),
-                        Factory.createLambdaQueryWrapper(Index.class)
-                                .eq(Index::getTokenId, token.getId())
-                                .orderByDesc(Index::getScore))
-                .getRecords();
+                Factory.resolvePage(page),
+                Factory.createLambdaQueryWrapper(Index.class)
+                        .eq(Index::getTokenId, token.getId())
+                        .orderByDesc(Index::getScore)
+        ).getRecords();
     }
 
     private static List<DocumentDto> convert2DocumentDto(String word, List<Document> documents, List<Index> indices) {
@@ -230,7 +223,7 @@ public class DefaultIndexService extends AbstractIndexService {
      */
     private List<Document> selectDocumentIndexedByWord(String word, Page<Index> page, Map<String, DocumentDto> hitDocumentDtoMap) {
         // Token -> Index -> Document
-        Token          token     = tokenService.selectToken(word);
+        Token          token     = tokenService.selectTokenByWord(word);
         List<Index>    indices   = selectIndicesByToken(token, page);
         List<Document> documents = documentService.selectDocumentsByIndices(indices);
         if (hitDocumentDtoMap != null) {
@@ -254,7 +247,6 @@ public class DefaultIndexService extends AbstractIndexService {
         }
         else {
             intersect(hitDocumentDtoMap, documents);
-
             for (DocumentDto documentDto : hitDocumentDtoMap.values()) {
                 populateIndexInfo(word, documentDto, indexMap);
             }

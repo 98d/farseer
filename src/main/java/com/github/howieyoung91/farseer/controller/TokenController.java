@@ -3,10 +3,8 @@ package com.github.howieyoung91.farseer.controller;
 import com.github.howieyoung91.farseer.entity.Token;
 import com.github.howieyoung91.farseer.pojo.JsonResponse;
 import com.github.howieyoung91.farseer.service.TokenService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.github.howieyoung91.farseer.util.Factory;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -21,5 +19,18 @@ public class TokenController {
     public JsonResponse getToken(@RequestParam("tokenIds") List<String> tokenIds) {
         List<Token> tokens = tokenService.selectTokensById(tokenIds);
         return JsonResponse.SUCCESSFUL(tokens);
+    }
+
+    @GetMapping("/token/startswith/{prefix}")
+    public JsonResponse getTokensStartWith(@PathVariable String prefix, Integer page, Integer size) {
+        if (page == null) {
+            page = 0;
+        }
+        if (size == null) {
+            size = 10;
+        }
+
+        List<String> words = tokenService.selectWordsStartsWith(prefix, Factory.createPage(page, size));
+        return JsonResponse.SUCCESSFUL(words);
     }
 }

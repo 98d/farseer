@@ -6,7 +6,7 @@ import com.github.howieyoung91.farseer.entity.Token;
 import com.github.howieyoung91.farseer.mapper.DocumentMapper;
 import com.github.howieyoung91.farseer.mapper.IndexMapper;
 import com.github.howieyoung91.farseer.mapper.TokenMapper;
-import com.github.howieyoung91.farseer.service.support.DefaultIndexService;
+import com.github.howieyoung91.farseer.service.support.DefaultIndexer;
 import com.github.howieyoung91.farseer.util.Factory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +17,9 @@ import java.util.ArrayList;
 @SpringBootTest
 public class IndexServiceTest {
     @Autowired
-    private DefaultIndexService indexService;
+    private DefaultIndexer indexService;
     @Autowired
-    private DocumentMapper      documentMapper;
+    private DocumentMapper documentMapper;
     @Autowired
     private IndexMapper         indexMapper;
     @Autowired

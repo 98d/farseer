@@ -4,9 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.howieyoung91.farseer.entity.Document;
 import com.github.howieyoung91.farseer.entity.Index;
 import com.github.howieyoung91.farseer.pojo.DocumentDto;
+import com.github.howieyoung91.farseer.pojo.DocumentVo;
 import com.github.howieyoung91.farseer.pojo.JsonResponse;
 import com.github.howieyoung91.farseer.service.DocumentService;
-import com.github.howieyoung91.farseer.service.IndexService;
+import com.github.howieyoung91.farseer.service.Indexer;
 import com.github.howieyoung91.farseer.util.Factory;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/farseer")
 public class IndexController {
     @Resource
-    private IndexService    indexService;
+    private Indexer         indexService;
     @Resource
     private DocumentService documentService;
 
@@ -71,7 +72,7 @@ public class IndexController {
         if (size == null) {
             size = 1000;
         }
-        List<Index> indices = indexService.getIndices(documentId, Factory.createPage(page, size));
+        Collection<Index> indices = indexService.getIndices(documentId, Factory.createPage(page, size));
         return JsonResponse.SUCCESSFUL(indices);
     }
 
@@ -82,9 +83,10 @@ public class IndexController {
     }
 
     @PutMapping("/index")
-    public JsonResponse index(String text, String content) {
-        Document          document = Document.fromJSON(text, content);
-        Collection<Index> index    = indexService.index(Collections.singletonList(document));
+    public JsonResponse index(@RequestBody DocumentVo documentVo) {
+        Document document = Document.fromJSON(documentVo.getText(), documentVo.getContent());
+        document.setHighlight(documentVo.getHighlightPrefix(), documentVo.getHighlightSuffix());
+        Collection<Index> index = indexService.index(Collections.singletonList(document));
         return JsonResponse.SUCCESSFUL(index);
     }
 }

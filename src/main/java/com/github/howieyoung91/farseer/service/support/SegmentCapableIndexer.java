@@ -1,7 +1,7 @@
 package com.github.howieyoung91.farseer.service.support;
 
 import com.github.howieyoung91.farseer.entity.Token;
-import com.github.howieyoung91.farseer.service.IndexService;
+import com.github.howieyoung91.farseer.service.Indexer;
 import com.github.howieyoung91.farseer.util.keyword.Keyword;
 import com.github.howieyoung91.farseer.util.keyword.TFIDFAnalyzer;
 import com.huaban.analysis.jieba.JiebaSegmenter;
@@ -13,16 +13,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public abstract class AbstractIndexService implements IndexService {
+public abstract class SegmentCapableIndexer implements Indexer {
     @Resource
     private JiebaSegmenter segmenter;
     @Resource
     private TFIDFAnalyzer  analyzer;
 
     protected List<String> segmentOnSearchMode(String text) {
-        List<String> segment = segment(text, JiebaSegmenter.SegMode.SEARCH);
-        segment = segment.stream().filter(s -> !StringUtils.isBlank(s)).collect(Collectors.toList());
-        return segment;
+        return segment(text, JiebaSegmenter.SegMode.SEARCH);
     }
 
     /**
@@ -34,6 +32,7 @@ public abstract class AbstractIndexService implements IndexService {
 
     private List<String> segment(String text, JiebaSegmenter.SegMode mode) {
         return segmenter.process(text, mode).stream()
+                .filter(segToken -> StringUtils.isNotBlank(segToken.word)) // 去除空白文本
                 .map(segToken -> segToken.word)
                 .collect(Collectors.toList());
     }

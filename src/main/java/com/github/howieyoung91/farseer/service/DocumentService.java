@@ -1,8 +1,10 @@
 package com.github.howieyoung91.farseer.service;
 
+import com.github.howieyoung91.farseer.config.CacheKeys;
 import com.github.howieyoung91.farseer.entity.Document;
 import com.github.howieyoung91.farseer.entity.Index;
 import com.github.howieyoung91.farseer.mapper.DocumentMapper;
+import com.github.howieyoung91.farseer.util.Redis;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -13,18 +15,28 @@ import java.util.List;
 public class DocumentService {
     @Resource
     private DocumentMapper documentMapper;
+    @Resource
+    private Redis          redis;
 
     public void insert(Document document) {
         document.setId(null);
         documentMapper.insert(document);
+        cache(document);
     }
 
     public int insert(List<Document> documents) {
-        return documentMapper.insertBatch(documents);
+        Integer count = documentMapper.insertBatch(documents);
+        for (Document document : documents) {
+            cache(document);
+        }
+        return count;
     }
 
     public void deleteById(String documentId) {
-        documentMapper.deleteById(documentId);
+        int count = documentMapper.deleteById(documentId);
+        if (count != 0) {
+            redis.del(CacheKeys.documentKey(documentId));
+        }
     }
 
     /**
@@ -40,10 +52,21 @@ public class DocumentService {
         List<Document> documents = new ArrayList<>();
         for (Index index : indices) {
             String   documentId = index.getDocumentId();
-            Document document   = documentMapper.selectById(documentId);
+            Document document   = selectDocumentById(documentId);
             documents.add(document);
         }
         return documents;
     }
 
+    private Document selectDocumentById(String documentId) {
+        Document document = (Document) redis.get(CacheKeys.documentKey(documentId));
+        if (document == null) {
+            document = documentMapper.selectById(documentId);
+        }
+        return document;
+    }
+
+    private void cache(Document document) {
+        redis.kvSet(CacheKeys.documentKey(document.getId()), document);
+    }
 }

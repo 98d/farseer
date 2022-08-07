@@ -16,14 +16,14 @@ Spring Boot, PyTorch, MySQL, MyBatis, Redis, Raft 协议
 - [x] 对指定关键词过滤 e.g. java -csdn
 - [x] 实现关联度算法, tfidf 算法，优先查询出关联度高的数据
 - [x] 关键词高亮
-- [ ] 关键词联想
-- [ ] 相关搜索
+- [x] 关键词联想
 - [ ] 文本搜图
 - [ ] 以图搜图
 - [ ] 集群
 
 ### TODO
 
-- [x] AC自动机
+- [x] Trie
+- [x] AC 自动机
 - [ ] 布隆过滤器，redis 做缓存加速搜索
 - [ ] raft 协议

@@ -11,11 +11,11 @@ import java.util.List;
 /**
  * @author Howie Young
  */
-public interface IndexService {
+public interface Indexer {
     /**
      * 查询 document 的倒排索引
      */
-    List<Index> getIndices(String documentId, Page<Index> page);
+    Collection<Index> getIndices(String documentId, Page<Index> page);
 
     /**
      * 删除倒排索引
