@@ -5,7 +5,7 @@
 
 ### Tech-Stack
 
-Spring Boot, PyTorch, MySQL, MyBatis, Redis, Raft 协议
+Spring Boot, MySQL, MyBatis, Redis, canal, Raft 协议
 
 ### Feature
 
@@ -25,5 +25,6 @@ Spring Boot, PyTorch, MySQL, MyBatis, Redis, Raft 协议
 
 - [x] Trie
 - [x] AC 自动机
+- [x] canal 监听数据库
 - [ ] 布隆过滤器，redis 做缓存加速搜索
 - [ ] raft 协议
