@@ -17,6 +17,8 @@ Spring Boot, MySQL, MyBatis, Redis, canal, Raft 协议
 - [x] 实现关联度算法, tfidf 算法，优先查询出关联度高的数据
 - [x] 关键词高亮
 - [x] 关键词联想
+- [x] 敏感词过滤
+- [x] 停用词
 - [ ] 文本搜图
 - [ ] 以图搜图
 - [ ] 集群

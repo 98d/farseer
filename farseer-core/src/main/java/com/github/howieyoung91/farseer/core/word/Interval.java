@@ -1,4 +1,4 @@
-package com.github.howieyoung91.farseer.core.util;
+package com.github.howieyoung91.farseer.core.word;
 
 import java.util.Objects;
 

@@ -1,5 +1,7 @@
 package com.github.howieyoung91.farseer.core.util;
 
+import com.github.howieyoung91.farseer.core.word.Interval;
+
 import java.util.*;
 
 /**
@@ -86,9 +88,7 @@ public class AcAutomation {
     public static AcAutomation from(String... words) {
         AcAutomation ac = new AcAutomation();
         for (String word : words) {
-            if (ac.words.add(word)) {
-                ac.addWord(word);
-            }
+            ac.addWord(word);
         }
         ac.buildFail();
         return ac;
@@ -133,30 +133,24 @@ public class AcAutomation {
         return intervals;
     }
 
+    public boolean containsWord(String word) {
+        return words.contains(word);
+    }
+
     public Set<String> words() {
         return words;
     }
 
     private void addWord(String word) {
-        Node curr   = root;
-        int  length = word.length();
-        for (int i = 0; i < length; i++) {
-            char c = word.charAt(i);
-            curr = curr.children.computeIfAbsent(c, character -> new Node(c));
-        }
-        curr.level = word.length();
-        curr.isWord = true;
-    }
-
-    private void words(Node curr, StringBuilder builder, ArrayList<String> result) {
-        if (!curr.hasChild()) {
-            String word = builder.toString();
-            result.add(word);
-        }
-        for (Node child : curr.children.values()) {
-            builder.append(child.character);
-            words(child, builder, result);
-            builder.deleteCharAt(builder.length() - 1);
+        if (words.add(word)) {
+            Node curr   = root;
+            int  length = word.length();
+            for (int i = 0; i < length; i++) {
+                char c = word.charAt(i);
+                curr = curr.children.computeIfAbsent(c, character -> new Node(c));
+            }
+            curr.level = word.length();
+            curr.isWord = true;
         }
     }
 

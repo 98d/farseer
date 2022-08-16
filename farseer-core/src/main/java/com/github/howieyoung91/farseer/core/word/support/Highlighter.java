@@ -1,4 +1,7 @@
-package com.github.howieyoung91.farseer.core.util;
+package com.github.howieyoung91.farseer.core.word.support;
+
+import com.github.howieyoung91.farseer.core.util.AcAutomation;
+import com.github.howieyoung91.farseer.core.word.Interval;
 
 import java.util.Iterator;
 import java.util.List;

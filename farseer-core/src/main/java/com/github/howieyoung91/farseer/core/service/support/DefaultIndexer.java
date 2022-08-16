@@ -10,7 +10,8 @@ import com.github.howieyoung91.farseer.core.pojo.IndexInfo;
 import com.github.howieyoung91.farseer.core.service.DocumentService;
 import com.github.howieyoung91.farseer.core.service.TokenService;
 import com.github.howieyoung91.farseer.core.util.Factory;
-import com.github.howieyoung91.farseer.core.util.Highlighter;
+import com.github.howieyoung91.farseer.core.word.SensitiveWordFilter;
+import com.github.howieyoung91.farseer.core.word.support.Highlighter;
 import com.github.howieyoung91.farseer.core.util.StringUtil;
 import com.github.howieyoung91.farseer.core.util.keyword.Keyword;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +26,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultIndexer extends SegmentCapableIndexer {
     @Resource
-    private IndexMapper     indexMapper;
+    private IndexMapper         indexMapper;
     @Resource
-    private DocumentService documentService;
+    private DocumentService     documentService;
     @Resource
-    private TokenService    tokenService;
-
+    private TokenService        tokenService;
+    @Resource
+    private SensitiveWordFilter filter;
     // ========================================   public methods   =========================================
 
     @Override
@@ -61,14 +63,18 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
     @Override
     public List<DocumentDto> searchByWord(String word, Page<Index> page) {
+        if (isSensitiveWord(word)) {
+            return new ArrayList<>(0);
+        }
+
         // Token -> Indices -> Documents
         Token          token     = tokenService.selectTokenByWord(word);
         List<Index>    indices   = selectIndicesByToken(token, page);
         List<Document> documents = documentService.selectDocumentsByIndices(indices);
 
         List<DocumentDto> documentDtos = convert2DocumentDto(word, documents, indices);
+        filterSensitives(documentDtos);
         highlight(documentDtos, word);
-
         return documentDtos;
     }
 
@@ -79,9 +85,13 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
         Map<String, DocumentDto> hitDocumentDtoMap = new HashMap<>(); // documentId : documentDto
         for (String word : words) {
+            if (isSensitiveWord(word)) {
+                continue;
+            }
             selectDocumentIndexedByWord(word, page, hitDocumentDtoMap);
         }
         Collection<DocumentDto> documentDtos = hitDocumentDtoMap.values();
+        filterSensitives(documentDtos);
         highlight(documentDtos, words.toArray(new String[]{}));
 
         return documentDtos;
@@ -96,6 +106,9 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
         // search documents
         for (String word : words) {
+            if (isSensitiveWord(word)) {
+                continue;
+            }
             String         resolvedWord = resolveWord(word);
             List<Document> documents;
             if (isFilteredWord(word)) {
@@ -108,6 +121,7 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         }
 
         List<DocumentDto> documentDtos = filterDocuments(hitDocumentDtoMap, filteredDocumentIds);
+        filterSensitives(documentDtos);
         highlight(documentDtos, words);
 
         return documentDtos;
@@ -187,6 +201,14 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         ).getRecords();
     }
 
+    private void filterSensitives(Collection<DocumentDto> documentDtos) {
+        for (DocumentDto documentDto : documentDtos) {
+            String resolved = filter.filter(documentDto.getText());
+            documentDto.setText(resolved);
+            log.info(resolved);
+        }
+    }
+
     private static List<DocumentDto> convert2DocumentDto(String word, List<Document> documents, List<Index> indices) {
         Map<String, Index> indexMap     = indices.stream().collect(Collectors.toMap(Index::getDocumentId, index -> index));
         List<DocumentDto>  documentDtos = new ArrayList<>();
@@ -210,6 +232,10 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
     private static boolean isFilteredWord(String word) {
         return word.startsWith("-");
+    }
+
+    private boolean isSensitiveWord(String word) {
+        return filter.isSensitive(word);
     }
 
     /**
@@ -292,4 +318,6 @@ public class DefaultIndexer extends SegmentCapableIndexer {
             documentDto.setText(highlightedText);
         }
     }
+
+
 }

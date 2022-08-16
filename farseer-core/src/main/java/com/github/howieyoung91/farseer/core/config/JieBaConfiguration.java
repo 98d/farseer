@@ -15,7 +15,7 @@ public class JieBaConfiguration {
     @Bean
     TFIDFAnalyzer tfidfAnalyzer() {
         try {
-            return new TFIDFAnalyzer("/jieba/stop_words.txt", "/jieba/idf_dict.txt");
+            return new TFIDFAnalyzer("/jieba/stop_words_new.txt", "/jieba/idf_dict.txt");
         }
         catch (Exception e) {
             throw new RuntimeException(e);
