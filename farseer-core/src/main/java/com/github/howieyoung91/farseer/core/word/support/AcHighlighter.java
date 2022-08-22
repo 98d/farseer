@@ -1,17 +1,18 @@
 package com.github.howieyoung91.farseer.core.word.support;
 
 import com.github.howieyoung91.farseer.core.util.AcAutomation;
+import com.github.howieyoung91.farseer.core.word.Highlighter;
 import com.github.howieyoung91.farseer.core.word.Interval;
 
 import java.util.Iterator;
 import java.util.List;
 
-public class Highlighter {
+public class AcHighlighter implements Highlighter {
     private       String       prefix;
     private       String       suffix;
     private final AcAutomation ac;
 
-    public Highlighter(String prefix, String suffix, String... words) {
+    public AcHighlighter(String prefix, String suffix, String... words) {
         AcAutomation.Builder builder = AcAutomation.Builder.aAcAutomation();
         for (String word : words) {
             builder.addWords(word.toLowerCase());
@@ -22,6 +23,7 @@ public class Highlighter {
         this.suffix = (suffix == null ? "" : suffix);
     }
 
+    @Override
     public String highlight(String text) {
         if (!shouldHighlight()) {
             return text;

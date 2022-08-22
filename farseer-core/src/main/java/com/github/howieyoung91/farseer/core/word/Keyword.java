@@ -1,18 +1,18 @@
-package com.github.howieyoung91.farseer.core.util.keyword;
+package com.github.howieyoung91.farseer.core.word;
 
 import java.util.Objects;
 
 public class Keyword implements Comparable<Keyword> {
-    private final double tfidfvalue;
+    private final double tfidf;
     private final String name;
 
-    public Keyword(String name, double tfidfvalue) {
+    public Keyword(String name, double tfidf) {
         this.name = name;
-        this.tfidfvalue = (double) Math.round(tfidfvalue * 10000) / 10000; // tfidf值只保留3位小数
+        this.tfidf = (double) Math.round(tfidf * 10000) / 10000; // tfidf值只保留3位小数
     }
 
-    public double getTfidfvalue() {
-        return tfidfvalue;
+    public double getTFIDF() {
+        return tfidf;
     }
 
     public String getName() {
@@ -21,12 +21,12 @@ public class Keyword implements Comparable<Keyword> {
 
     @Override
     public String toString() {
-        return "[" + name + ":" + tfidfvalue + "]";
+        return "[" + name + ":" + tfidf + "]";
     }
 
     @Override
     public int compareTo(Keyword o) {
-        return this.tfidfvalue - o.tfidfvalue > 0 ? -1 : 1;
+        return this.tfidf - o.tfidf > 0 ? -1 : 1;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class Keyword implements Comparable<Keyword> {
         final int prime  = 31;
         int       result = 1;
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        long temp = Double.doubleToLongBits(tfidfvalue);
+        long temp = Double.doubleToLongBits(tfidf);
         result = prime * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
@@ -46,7 +46,7 @@ public class Keyword implements Comparable<Keyword> {
         if (o == null || getClass() != o.getClass())
             return false;
         Keyword keyword = (Keyword) o;
-        return Double.compare(keyword.tfidfvalue, tfidfvalue) == 0 && Objects.equals(name, keyword.name);
+        return Double.compare(keyword.tfidf, tfidf) == 0 && Objects.equals(name, keyword.name);
     }
 }
 

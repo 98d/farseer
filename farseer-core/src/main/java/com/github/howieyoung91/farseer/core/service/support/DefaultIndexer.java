@@ -10,10 +10,10 @@ import com.github.howieyoung91.farseer.core.pojo.IndexInfo;
 import com.github.howieyoung91.farseer.core.service.DocumentService;
 import com.github.howieyoung91.farseer.core.service.TokenService;
 import com.github.howieyoung91.farseer.core.util.Factory;
-import com.github.howieyoung91.farseer.core.word.SensitiveWordFilter;
-import com.github.howieyoung91.farseer.core.word.support.Highlighter;
 import com.github.howieyoung91.farseer.core.util.StringUtil;
-import com.github.howieyoung91.farseer.core.util.keyword.Keyword;
+import com.github.howieyoung91.farseer.core.word.Keyword;
+import com.github.howieyoung91.farseer.core.word.SensitiveFilter;
+import com.github.howieyoung91.farseer.core.word.support.AcHighlighter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,22 +26,22 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultIndexer extends SegmentCapableIndexer {
     @Resource
-    private IndexMapper         indexMapper;
+    private IndexMapper     indexMapper;
     @Resource
-    private DocumentService     documentService;
+    private DocumentService documentService;
     @Resource
-    private TokenService        tokenService;
+    private TokenService    tokenService;
     @Resource
-    private SensitiveWordFilter filter;
-    // ========================================   public methods   =========================================
+    private SensitiveFilter filter;
+
+    // ======================================== public methods =========================================
 
     @Override
     public List<Index> getIndices(String documentId, Page<Index> page) {
         return indexMapper.selectPage(
                 Factory.resolvePage(page),
                 Factory.createLambdaQueryWrapper(Index.class)
-                        .eq(Index::getDocumentId, documentId)
-                        .orderByDesc(Index::getScore)
+                        .eq(Index::getDocumentId, documentId).orderByDesc(Index::getScore)
         ).getRecords();
     }
 
@@ -78,7 +78,6 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         return documentDtos;
     }
 
-
     @Override
     public Collection<DocumentDto> searchBySentence(String sentence, Page<Index> page) {
         List<String> words = segmentOnSearchMode(sentence);
@@ -113,7 +112,9 @@ public class DefaultIndexer extends SegmentCapableIndexer {
             List<Document> documents;
             if (isFilteredWord(word)) {
                 documents = selectDocumentIndexedByWord(resolvedWord, page, null);
-                documents.stream().map(Document::getId).forEach(filteredDocumentIds::add); // add into filteredDocumentIds waiting for using
+                documents.stream().map(Document::getId).forEach(filteredDocumentIds::add); // add into
+                // filteredDocumentIds
+                // waiting for using
             }
             else {
                 selectDocumentIndexedByWord(resolvedWord, page, hitDocumentDtoMap);
@@ -127,8 +128,7 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         return documentDtos;
     }
 
-
-    // ========================================   public methods   =========================================
+    // ======================================== public methods =========================================
 
     private Collection<Index> buildIndices(Collection<Document> documents) {
         ArrayList<Index> indices = new ArrayList<>();
@@ -178,8 +178,7 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
     private void insertIndex(Index index) {
         Index existedIndex = indexMapper.selectOne(Factory.createLambdaQueryWrapper(Index.class)
-                .eq(Index::getTokenId, index.getTokenId())
-                .eq(Index::getDocumentId, index.getDocumentId()));
+                .eq(Index::getTokenId, index.getTokenId()).eq(Index::getDocumentId, index.getDocumentId()));
         if (existedIndex == null) {
             indexMapper.insert(index);
         }
@@ -193,12 +192,8 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         if (token == null) {
             return new ArrayList<>(0);
         }
-        return indexMapper.selectPage(
-                Factory.resolvePage(page),
-                Factory.createLambdaQueryWrapper(Index.class)
-                        .eq(Index::getTokenId, token.getId())
-                        .orderByDesc(Index::getScore)
-        ).getRecords();
+        return indexMapper.selectPage(Factory.resolvePage(page), Factory.createLambdaQueryWrapper(Index.class)
+                .eq(Index::getTokenId, token.getId()).orderByDesc(Index::getScore)).getRecords();
     }
 
     private void filterSensitives(Collection<DocumentDto> documentDtos) {
@@ -243,10 +238,12 @@ public class DefaultIndexer extends SegmentCapableIndexer {
      *
      * @param word              一个单词
      * @param page              分页
-     * @param hitDocumentDtoMap documentId : documentDto 如果这个哈希表被传入，将会把查出来的 document 转为 documentDto 并添加进哈希表
+     * @param hitDocumentDtoMap documentId : documentDto 如果这个哈希表被传入，将会把查出来的 document 转为
+     *                          documentDto 并添加进哈希表
      * @return 查询出来的 document
      */
-    private List<Document> selectDocumentIndexedByWord(String word, Page<Index> page, Map<String, DocumentDto> hitDocumentDtoMap) {
+    private List<Document> selectDocumentIndexedByWord(String word, Page<Index> page,
+                                                       Map<String, DocumentDto> hitDocumentDtoMap) {
         // Token -> Index -> Document
         Token          token     = tokenService.selectTokenByWord(word);
         List<Index>    indices   = selectIndicesByToken(token, page);
@@ -280,7 +277,8 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
     private static void intersect(Map<String, DocumentDto> hitDocumentDtoMap, List<Document> documents) {
         // documentId : document
-        Map<String, Document> collect = documents.stream().collect(Collectors.toMap(Document::getId, document -> document));
+        Map<String, Document> collect = documents.stream()
+                .collect(Collectors.toMap(Document::getId, document -> document));
         doIntersect(hitDocumentDtoMap, collect);
     }
 
@@ -291,10 +289,10 @@ public class DefaultIndexer extends SegmentCapableIndexer {
         hitDocumentDtoMap.keySet().removeIf(documentId -> !documentMap.containsKey(documentId));
     }
 
-    private static List<DocumentDto> filterDocuments(Map<String, DocumentDto> hitDocumentDtoMap, Set<String> filteredDocumentIds) {
+    private static List<DocumentDto> filterDocuments(Map<String, DocumentDto> hitDocumentDtoMap,
+                                                     Set<String> filteredDocumentIds) {
         return hitDocumentDtoMap.values().stream()
-                .filter(documentDto -> !filteredDocumentIds.contains(documentDto.getId()))
-                .collect(Collectors.toList());
+                .filter(documentDto -> !filteredDocumentIds.contains(documentDto.getId())).collect(Collectors.toList());
     }
 
     /**
@@ -313,11 +311,11 @@ public class DefaultIndexer extends SegmentCapableIndexer {
 
     private static void highlight(Collection<DocumentDto> documents, String... words) {
         for (DocumentDto documentDto : documents) {
-            Highlighter highlighter     = new Highlighter(documentDto.getHighlightPrefix(), documentDto.getHighlightSuffix(), words);
-            String      highlightedText = highlighter.highlight(documentDto.getText());
+            AcHighlighter highlighter = new AcHighlighter(documentDto.getHighlightPrefix(),
+                    documentDto.getHighlightSuffix(), words);
+            String highlightedText = highlighter.highlight(documentDto.getText());
             documentDto.setText(highlightedText);
         }
     }
-
 
 }

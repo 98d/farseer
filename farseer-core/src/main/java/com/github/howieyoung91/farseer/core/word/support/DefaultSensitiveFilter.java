@@ -2,7 +2,7 @@ package com.github.howieyoung91.farseer.core.word.support;
 
 import com.github.howieyoung91.farseer.core.util.AcAutomation;
 import com.github.howieyoung91.farseer.core.word.Interval;
-import com.github.howieyoung91.farseer.core.word.SensitiveWordFilter;
+import com.github.howieyoung91.farseer.core.word.SensitiveFilter;
 
 import java.util.List;
 
@@ -11,15 +11,15 @@ import java.util.List;
  * @version 1.0
  * @since 1.0 [2022/08/16 18:24]
  */
-public class DefaultSensitiveWordFilter implements SensitiveWordFilter {
+public class DefaultSensitiveFilter implements SensitiveFilter {
     private final AcAutomation ac;
     private final String       replacement;
 
-    public DefaultSensitiveWordFilter(AcAutomation ac) {
+    public DefaultSensitiveFilter(AcAutomation ac) {
         this(ac, "*");
     }
 
-    public DefaultSensitiveWordFilter(AcAutomation ac, String replacement) {
+    public DefaultSensitiveFilter(AcAutomation ac, String replacement) {
         this.ac = ac;
         this.replacement = replacement;
     }
@@ -76,8 +76,8 @@ public class DefaultSensitiveWordFilter implements SensitiveWordFilter {
             return this;
         }
 
-        public DefaultSensitiveWordFilter build() {
-            return new DefaultSensitiveWordFilter(acBuilder.build(), replacement);
+        public DefaultSensitiveFilter build() {
+            return new DefaultSensitiveFilter(acBuilder.build(), replacement);
         }
     }
 }

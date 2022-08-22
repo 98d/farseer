@@ -2,8 +2,8 @@ package com.github.howieyoung91.farseer.core.service.support;
 
 import com.github.howieyoung91.farseer.core.entity.Token;
 import com.github.howieyoung91.farseer.core.service.Indexer;
-import com.github.howieyoung91.farseer.core.util.keyword.Keyword;
-import com.github.howieyoung91.farseer.core.util.keyword.TFIDFAnalyzer;
+import com.github.howieyoung91.farseer.core.word.Keyword;
+import com.github.howieyoung91.farseer.core.word.support.TFIDFAnalyzer;
 import com.huaban.analysis.jieba.JiebaSegmenter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -50,6 +50,6 @@ public abstract class SegmentCapableIndexer implements Indexer {
      */
     protected static double calcScore(Map<String, Keyword> keywords, Token token) {
         Keyword keyword = keywords.get(token.getWord());
-        return keyword == null ? 0 : keyword.getTfidfvalue();
+        return keyword == null ? 0 : keyword.getTFIDF();
     }
 }

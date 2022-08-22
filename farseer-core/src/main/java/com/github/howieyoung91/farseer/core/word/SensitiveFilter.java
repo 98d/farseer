@@ -5,7 +5,7 @@ package com.github.howieyoung91.farseer.core.word;
  * @version 1.0
  * @since 1.0
  */
-public interface SensitiveWordFilter {
+public interface SensitiveFilter {
     String filter(String raw);
 
     boolean isSensitive(String word);

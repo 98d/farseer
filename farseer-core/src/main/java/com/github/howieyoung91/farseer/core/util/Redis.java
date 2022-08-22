@@ -1,5 +1,9 @@
 package com.github.howieyoung91.farseer.core.util;
 
+import com.github.howieyoung91.farseer.core.config.redis.CfCommands;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.dynamic.RedisCommandFactory;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
@@ -16,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class Redis {
+    @Resource
+    RedisClient redisClient;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -118,5 +124,38 @@ public class Redis {
     public Cursor<ZSetOperations.TypedTuple<Object>> zscan(String key, int count) {
         return redisTemplate.opsForZSet().scan(key, ScanOptions.scanOptions().count(count).build());
     }
-}
 
+    // todo 连接池
+    public void cfadd(String key, Object value) {
+        try (StatefulRedisConnection<String, String> connect = getConnection()) {
+            CfCommands commands = getCfCommands(connect);
+            commands.add(key, value);
+        }
+    }
+
+    public void cfdel(String key, Object value) {
+        try (StatefulRedisConnection<String, String> connect = getConnection()) {
+            CfCommands commands = getCfCommands(connect);
+            commands.del(key, value);
+        }
+    }
+
+    public boolean cfexists(String key, Object value) {
+        try (StatefulRedisConnection<String, String> connect = getConnection()) {
+            CfCommands commands = getCfCommands(connect);
+            return (long) commands.exists(key, value).get(0) == 1;
+        }
+    }
+
+    private StatefulRedisConnection<String, String> getConnection() {
+        return redisClient.connect();
+    }
+
+    private RedisCommandFactory getCommandFactory(StatefulRedisConnection<String, String> connect) {
+        return new RedisCommandFactory(connect);
+    }
+
+    private CfCommands getCfCommands(StatefulRedisConnection<String, String> connect) {
+        return getCommandFactory(connect).getCommands(CfCommands.class);
+    }
+}

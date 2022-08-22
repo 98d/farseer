@@ -1,6 +1,6 @@
 package com.github.howieyoung91.farseer.core.config;
 
-import com.github.howieyoung91.farseer.core.word.support.DefaultSensitiveWordFilter;
+import com.github.howieyoung91.farseer.core.word.support.DefaultSensitiveFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,10 +19,10 @@ import java.util.Objects;
 @Configuration
 public class SensitiveWordsConfig {
     @Bean
-    DefaultSensitiveWordFilter filter() {
-        URL resource = this.getClass().getResource("/sensitive/sensitive.txt");
+    DefaultSensitiveFilter filter() {
+        URL resource = getClass().getResource("/sensitive/sensitive.txt");
         Objects.requireNonNull(resource);
-        DefaultSensitiveWordFilter.Builder builder = DefaultSensitiveWordFilter.Builder.aFilter();
+        DefaultSensitiveFilter.Builder builder = DefaultSensitiveFilter.Builder.aFilter();
         try {
             BufferedReader reader = new BufferedReader(new FileReader(resource.getFile(), StandardCharsets.UTF_8));
             while (true) {
